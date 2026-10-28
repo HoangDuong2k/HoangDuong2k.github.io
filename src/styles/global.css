@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+@import 'momi-ui/tailwind.css';
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+@theme {
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+}
+
+:root {
+  --primary: oklch(0.58 0.2 285);
+  --ring: oklch(0.58 0.2 285);
+  --radius: 0.8rem;
+  --sky-a: #0c0b14;
+  --sky-b: #171329;
+  --ink: #ecebf5;
+}
+
+html {
+  height: 100%;
+}
+
+/* min-height, not height: a fixed-height body would cap sticky elements (resume nav) at one screen. */
+body {
+  min-height: 100%;
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: linear-gradient(160deg, var(--sky-a), var(--sky-b));
+}
+
+/* Paper reader: a document lifted off the desk. */
+.paper {
+  color: #1d1b2e;
+  background: #fffdf8;
+  background-image: radial-gradient(rgb(0 0 0 / 0.035) 1px, transparent 1px);
+  background-size: 14px 14px;
+  box-shadow:
+    0 1px 0 rgb(0 0 0 / 0.04),
+    0 30px 80px -20px rgb(60 30 90 / 0.45);
+}
+
+.os-wallpaper {
+  background:
+    radial-gradient(55% 70% at 12% 15%, rgb(139 92 246 / 0.55) 0%, transparent 60%),
+    radial-gradient(45% 60% at 88% 25%, rgb(255 77 141 / 0.4) 0%, transparent 60%),
+    radial-gradient(60% 60% at 55% 105%, rgb(34 211 238 / 0.4) 0%, transparent 60%),
+    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px) 0 0 / 40px 40px,
+    linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px) 0 0 / 40px 40px,
+    #0b0a14;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.97);
+  }
+}
+.anim-rise {
+  animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes power-on {
+  0% {
+    opacity: 0;
+    filter: brightness(3) saturate(0);
+    transform: scale(0.96);
+  }
+  60% {
+    opacity: 1;
+  }
+}
+.anim-power {
+  animation: power-on 0.6s ease-out both;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+.caret {
+  animation: blink 1s steps(1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-rise,
+  .anim-power {
+    animation: none;
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: #fff;
+  }
+}

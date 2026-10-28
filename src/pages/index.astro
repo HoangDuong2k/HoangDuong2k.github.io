@@ -1,0 +1,19 @@
+---
+import Base from '@/layouts/Base.astro'
+import App from '@/components/App'
+import { profile, projects } from '@/data/profile'
+---
+
+<Base title={`${profile.nameAscii} · Frontend Developer`}>
+  <App client:only="react" />
+  <!-- Readable without JS / for crawlers; the full text lives on /resume. -->
+  <noscript>
+    <main style="max-width:40rem;margin:4rem auto;padding:0 1rem">
+      <h1>{profile.name}</h1>
+      <p>{profile.role} · {profile.stack}</p>
+      <p>{profile.summary}</p>
+      <ul>{projects.map((p) => <li><a href={p.repo}>{p.name}</a> — {p.tagline}</li>)}</ul>
+      <p><a href="/resume">Read the full resume</a></p>
+    </main>
+  </noscript>
+</Base>
