@@ -14,8 +14,10 @@ export interface QualitySettings {
 }
 
 export const QUALITY: Record<Tier, QualitySettings> = {
-  high: { dpr: [1, 1.75], shadowMap: 2048, bloom: true, multisampling: 4, envResolution: 128, accentLights: true },
-  medium: { dpr: [1, 1.25], shadowMap: 1024, bloom: true, multisampling: 0, envResolution: 64, accentLights: true },
+  // Every extra light is paid per pixel on every lit surface, and pixels grow with dpr squared, so
+  // those two are the main levers. Above ~1.5 dpr the difference is hard to see but costly.
+  high: { dpr: [1, 1.5], shadowMap: 2048, bloom: true, multisampling: 2, envResolution: 128, accentLights: true },
+  medium: { dpr: [1, 1.25], shadowMap: 1024, bloom: true, multisampling: 0, envResolution: 64, accentLights: false },
   low: { dpr: [0.75, 1], shadowMap: 0, bloom: false, multisampling: 0, envResolution: 32, accentLights: false },
 }
 

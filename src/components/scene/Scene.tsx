@@ -60,7 +60,7 @@ export function Scene({ lockedTier }: { lockedTier: boolean }) {
 
   return (
     <Canvas
-      shadows={q.shadowMap > 0 ? 'soft' : false}
+      shadows={q.shadowMap > 0 ? 'percentage' : false}
       dpr={q.dpr}
       frameloop={covered ? 'never' : 'always'}
       camera={{ fov: 40, position: HOME.pos, near: 0.05, far: 60 }}
@@ -107,7 +107,7 @@ export function Scene({ lockedTier }: { lockedTier: boolean }) {
 
       {q.bloom && (
         <EffectComposer multisampling={q.multisampling}>
-          <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.85} radius={0.7} resolutionScale={tier === 'high' ? 1 : 0.5} />
+          <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.85} radius={0.7} resolutionScale={0.5} />
           <Vignette offset={0.25} darkness={0.65} />
         </EffectComposer>
       )}

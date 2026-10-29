@@ -211,7 +211,7 @@ export function Paper({ id }: { id: DocId }) {
           {doc.node}
           <button
             onClick={close}
-            className="absolute -top-11 right-0 rounded-full bg-white px-3 py-1.5 text-xs font-medium shadow-md hover:bg-white/90"
+            className="absolute -top-11 right-0 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#1d1b2e] shadow-md hover:bg-white/90"
           >
             put it back <kbd className="ml-1 opacity-50">Esc</kbd>
           </button>

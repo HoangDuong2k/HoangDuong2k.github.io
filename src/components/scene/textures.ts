@@ -34,7 +34,8 @@ function lines(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, c
 }
 
 /* -------------------------------------------------------------------------------------------------
- * Monitor: lock screen of hoang.os, redrawn every second for the clock and caret.
+ * Monitor: lock screen of hoang.os. Redrawn (and re-uploaded) only when the minute changes; the
+ * blinking caret is a separate mesh so it costs no texture upload.
  * -----------------------------------------------------------------------------------------------*/
 
 export function createScreenTexture() {
@@ -76,8 +77,14 @@ export function createScreenTexture() {
     ctx.fill()
     ctx.fillStyle = '#fff'
     ctx.font = `500 28px ${MONO}`
-    const caret = now.getSeconds() % 2 === 0 ? '▍' : ' '
-    ctx.fillText(`click to log in ${caret}`, W / 2, 422)
+    const label = 'click to log in'
+    const caretW = 16
+    const textW = ctx.measureText(label).width
+    ctx.fillText(label, W / 2 - (caretW + 8) / 2, 422)
+    caret.u = (W / 2 + textW / 2 + 4 - caretW / 2) / W
+    caret.v = 402 / H
+    caret.w = caretW / W
+    caret.h = 28 / H
 
     ctx.font = `500 22px ${MONO}`
     ctx.fillStyle = 'rgba(255,255,255,0.55)'
@@ -85,11 +92,20 @@ export function createScreenTexture() {
     tex.needsUpdate = true
   }
 
+  /** Caret box in texture space (0..1, origin top-left), filled in by draw(). */
+  const caret = { u: 0, v: 0, w: 0, h: 0 }
+  let shown = ''
+  const tick = () => {
+    const minute = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    if (document.hidden || minute === shown) return
+    shown = minute
+    draw()
+  }
+
   draw()
   document.fonts?.ready.then(draw)
-  // Skip redraw + GPU upload while the tab is hidden.
-  const timer = window.setInterval(() => !document.hidden && draw(), 1000)
-  return { texture: tex, dispose: () => window.clearInterval(timer) }
+  const timer = window.setInterval(tick, 1000)
+  return { texture: tex, caret, dispose: () => window.clearInterval(timer) }
 }
 
 /* -------------------------------------------------------------------------------------------------
@@ -224,12 +240,15 @@ export function createNoteTexture() {
  * Gaming room props
  * -----------------------------------------------------------------------------------------------*/
 
-/** Vertical side monitor: an editor with real-looking code that slowly scrolls. */
+/**
+ * Vertical side monitor: an editor with real-looking code that slowly scrolls.
+ * The code is drawn once into a tileable strip; scrolling is a UV offset (no per-frame redraw or upload).
+ */
+export const CODE_HEADER_PX = 44
+export const CODE_LINE_PX = 30
+
 export function createCodeTexture() {
   const W = 512
-  const H = 880
-  const { canvas, ctx } = makeCanvas(W, H)
-  const tex = toTexture(canvas)
   const code: [string, string][] = [
     ['#c084fc', 'export function'],
     ['#7dd3fc', '  useRealtimeSync(source) {'],
@@ -252,37 +271,45 @@ export function createCodeTexture() {
     ['#86efac', '  expect(tasks).toEqual(before)'],
     ['#f9a8d4', ')'],
   ]
-  let offset = 0
+  const header = makeCanvas(W, CODE_HEADER_PX)
+  const body = makeCanvas(W, code.length * CODE_LINE_PX)
+  const headerTex = toTexture(header.canvas)
+  const bodyTex = toTexture(body.canvas)
+  bodyTex.wrapT = THREE.RepeatWrapping
+
   const draw = () => {
-    ctx.fillStyle = '#0d1020'
-    ctx.fillRect(0, 0, W, H)
+    let ctx = header.ctx
     ctx.fillStyle = '#151a30'
-    ctx.fillRect(0, 0, W, 44)
+    ctx.fillRect(0, 0, W, CODE_HEADER_PX)
     ctx.fillStyle = '#e2e8f0'
     ctx.font = `500 18px ${MONO}`
     ctx.fillText('useRealtimeSync.ts', 20, 29)
+
+    ctx = body.ctx
+    ctx.fillStyle = '#0d1020'
+    ctx.fillRect(0, 0, W, body.canvas.height)
     ctx.font = `500 19px ${MONO}`
-    const lh = 30
-    const rows = Math.ceil((H - 60) / lh) + 1
-    for (let i = 0; i < rows; i++) {
-      const idx = (i + offset) % code.length
-      const [color, text] = code[idx]
-      const y = 80 + i * lh
+    code.forEach(([color, text], i) => {
+      const y = i * CODE_LINE_PX + 21
       ctx.fillStyle = 'rgba(148,163,184,0.35)'
-      ctx.fillText(String(idx + 1).padStart(2, ' '), 14, y)
+      ctx.fillText(String(i + 1).padStart(2, ' '), 14, y)
       ctx.fillStyle = color
       ctx.fillText(text, 56, y)
-    }
-    tex.needsUpdate = true
+    })
+    headerTex.needsUpdate = true
+    bodyTex.needsUpdate = true
   }
   draw()
   document.fonts?.ready.then(draw)
-  const timer = window.setInterval(() => {
-    if (document.hidden) return
-    offset = (offset + 1) % code.length
-    draw()
-  }, 1400)
-  return { texture: tex, dispose: () => window.clearInterval(timer) }
+  return {
+    header: headerTex,
+    body: bodyTex,
+    lines: code.length,
+    dispose: () => {
+      headerTex.dispose()
+      bodyTex.dispose()
+    },
+  }
 }
 
 /** Neon wall sign; the bright core blooms in post. */
@@ -417,4 +444,77 @@ export function createDeskMatTexture() {
   draw()
   document.fonts?.ready.then(draw)
   return tex
+}
+
+/* -------------------------------------------------------------------------------------------------
+ * Desk cat: all-white coat. Body and haunch spheres are turned so their poles run along the spine:
+ * canvas x = 0 / W is the belly, W / 2 the spine. Fur grain keeps the white from looking like plastic.
+ * -----------------------------------------------------------------------------------------------*/
+
+const FUR_WHITE = '#f4f1ec'
+const FUR_SHADE = '#e4ddd3'
+
+/** Soft fur grain: many short semi-transparent strokes. */
+function grain(ctx: CanvasRenderingContext2D, w: number, h: number, count: number) {
+  const colors = ['rgba(255,255,255,0.45)', 'rgba(150,135,120,0.07)']
+  ctx.lineWidth = 1.2
+  for (let i = 0; i < count; i++) {
+    const x = (i * 97.13) % w
+    const y = (i * 57.71 + (i % 7) * 13) % h
+    ctx.strokeStyle = colors[i % colors.length]
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    ctx.lineTo(x + 2, y + 5)
+    ctx.stroke()
+  }
+}
+
+export function createCatBodyTexture() {
+  const W = 512
+  const H = 256
+  const { canvas, ctx } = makeCanvas(W, H)
+  // Faintly warmer, shadowed belly; bright back.
+  const side = ctx.createLinearGradient(0, 0, W, 0)
+  side.addColorStop(0, FUR_SHADE)
+  side.addColorStop(0.3, FUR_WHITE)
+  side.addColorStop(0.7, FUR_WHITE)
+  side.addColorStop(1, FUR_SHADE)
+  ctx.fillStyle = side
+  ctx.fillRect(0, 0, W, H)
+  grain(ctx, W, H, 2600)
+  return toTexture(canvas)
+}
+
+export function createCatHeadTexture() {
+  const W = 256
+  const H = 128
+  const { canvas, ctx } = makeCanvas(W, H)
+  ctx.fillStyle = FUR_WHITE
+  ctx.fillRect(0, 0, W, H)
+  grain(ctx, W, H, 900)
+  return toTexture(canvas)
+}
+
+export function createCatTailTexture() {
+  const W = 256
+  const H = 32
+  const { canvas, ctx } = makeCanvas(W, H)
+  ctx.fillStyle = FUR_WHITE
+  ctx.fillRect(0, 0, W, H)
+  grain(ctx, W, H, 300)
+  return toTexture(canvas)
+}
+
+/** A single soft "Z" for the sleeping bubbles. */
+export function createZzzTexture() {
+  const S = 128
+  const { canvas, ctx } = makeCanvas(S, S)
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `800 96px ${SANS}`
+  ctx.shadowColor = 'rgba(167,139,250,0.9)'
+  ctx.shadowBlur = 18
+  ctx.fillStyle = '#f5f3ff'
+  ctx.fillText('Z', S / 2, S / 2 + 4)
+  return toTexture(canvas)
 }
