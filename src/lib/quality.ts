@@ -5,20 +5,19 @@ export interface QualitySettings {
   dpr: [number, number]
   /** 0 disables shadows entirely. */
   shadowMap: number
-  bloom: boolean
-  /** MSAA samples on the post-processing buffer. */
-  multisampling: number
+  /** Image-based reflections on every PBR surface; 0 disables them (about a quarter of an iGPU frame). */
   envResolution: number
-  /** Decorative point lights (neon, window, PC, monitor backlight). The RGB wall wash always stays. */
-  accentLights: boolean
+  /** 4x MSAA on the canvas. Fixed when the WebGL context is created. */
+  antialias: boolean
 }
 
 export const QUALITY: Record<Tier, QualitySettings> = {
-  // Every extra light is paid per pixel on every lit surface, and pixels grow with dpr squared, so
-  // those two are the main levers. Above ~1.5 dpr the difference is hard to see but costly.
-  high: { dpr: [1, 1.5], shadowMap: 2048, bloom: true, multisampling: 2, envResolution: 128, accentLights: true },
-  medium: { dpr: [1, 1.25], shadowMap: 1024, bloom: true, multisampling: 0, envResolution: 64, accentLights: false },
-  low: { dpr: [0.75, 1], shadowMap: 0, bloom: false, multisampling: 0, envResolution: 32, accentLights: false },
+  // Coloured light is baked into textures. Measured on an Intel UHD iGPU at medium (~0.8 MP), per
+  // frame: MSAA ~6.7 ms, environment reflections ~6.2 ms, shadow lookups ~2.2 ms. So the iGPU tiers
+  // drop the first two and keep the shadows.
+  high: { dpr: [1, 1.5], shadowMap: 2048, envResolution: 128, antialias: true },
+  medium: { dpr: [1, 1.25], shadowMap: 1024, envResolution: 0, antialias: false },
+  low: { dpr: [0.75, 1], shadowMap: 0, envResolution: 0, antialias: false },
 }
 
 const ORDER: Tier[] = ['low', 'medium', 'high']
@@ -49,8 +48,25 @@ export function detectTier(): Tier {
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   if (cores <= 2 || memory <= 2) return 'low'
-  if (touch || small || cores <= 4 || memory <= 4 || reduceMotion) return 'medium'
+  if (touch || small || cores <= 4 || memory <= 4 || reduceMotion || integratedGpu()) return 'medium'
   return 'high'
+}
+
+/**
+ * Laptop iGPUs (Intel UHD/Iris, AMD Vega/Radeon Graphics) share memory bandwidth with the CPU and
+ * struggle with high dpr. Apple Silicon is integrated too but is fast enough for "high".
+ */
+function integratedGpu() {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl')
+    if (!gl) return false
+    const info = gl.getExtension('WEBGL_debug_renderer_info')
+    const renderer = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER))
+    gl.getExtension('WEBGL_lose_context')?.loseContext()
+    return /intel|radeon\(tm\) graphics|radeon graphics|vega \d+ graphics|mali|adreno|powervr|swiftshader|llvmpipe/i.test(renderer)
+  } catch {
+    return false
+  }
 }
 
 export function rememberTier(t: Tier) {

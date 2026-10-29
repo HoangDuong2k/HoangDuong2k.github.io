@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
 import * as THREE from 'three'
@@ -23,6 +23,7 @@ import {
   createScreenTexture,
   createSkylineTexture,
   createZzzTexture,
+  getGlowTexture,
 } from './textures'
 
 const C = {
@@ -45,21 +46,42 @@ function glow(hex: string, power = 2.2) {
   return new THREE.Color(hex).multiplyScalar(power)
 }
 
+/**
+ * Metals get their look from reflections. Tiers without an environment map would render them nearly
+ * black, so there they fall back to a mostly diffuse finish lit by the hemisphere light.
+ */
 function Mat({ color, rough = 0.6, metal = 0 }: { color: string; rough?: number; metal?: number }) {
-  return <meshStandardMaterial color={color} roughness={rough} metalness={metal} />
+  const reflections = useStore((st) => QUALITY[st.tier].envResolution > 0)
+  return <meshStandardMaterial color={color} roughness={rough} metalness={reflections ? metal : metal * 0.3} />
 }
 
-/** Decorative lights only render on tiers that can afford the extra per-pixel cost. */
-function Accent({ children }: { children: ReactNode }) {
-  const on = useStore((st) => QUALITY[st.tier].accentLights)
-  return on ? <>{children}</> : null
+type Vec3 = [number, number, number]
+
+/**
+ * Baked light, the way hand-made WebGL rooms do it: instead of a real-time light (paid for on every
+ * lit pixel, every frame), a soft additive glow painted onto the surface it would light.
+ * Floors and desk tops need rotation [-PI/2, 0, 0]; walls face +Z already.
+ */
+function LightPool({ position, rotation, size, color, strength = 1 }: { position: Vec3; rotation?: Vec3; size: [number, number]; color: string; strength?: number }) {
+  const tint = useMemo(() => new THREE.Color(color).multiplyScalar(strength), [color, strength])
+  return (
+    <mesh position={position} rotation={rotation} renderOrder={1}>
+      <planeGeometry args={size} />
+      <meshBasicMaterial
+        map={getGlowTexture()}
+        color={tint}
+        transparent
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        toneMapped={false}
+        polygonOffset
+        polygonOffsetFactor={-2}
+      />
+    </mesh>
+  )
 }
 
-/** Shared RGB clock so every light strip cycles in sync. */
-const rgb = new THREE.Color()
-function rgbAt(t: number, offset = 0) {
-  return rgb.setHSL((t * 0.06 + offset) % 1, 0.85, 0.55)
-}
+const FLAT: Vec3 = [-Math.PI / 2, 0, 0]
 
 /* ---------------------------------------------------------------------------------------------- */
 /* Room shell                                                                                     */
@@ -112,8 +134,10 @@ function Room() {
             <Mat color="#0e0e14" rough={0.4} />
           </mesh>
         ))}
-        <Accent><pointLight position={[0, 0, 0.6]} color="#ff8fb0" intensity={1.2} distance={3} /></Accent>
       </group>
+      {/* City glow through the window, on the floor and the side of the desk */}
+      <LightPool position={[leftX + 0.9, floorY + 0.012, 0.6]} rotation={FLAT} size={[2.2, 2.4]} color="#ff8fb0" strength={0.22} />
+      <LightPool position={[leftX + 0.006, 0.75, 0.6]} rotation={[0, Math.PI / 2, 0]} size={[3, 2.6]} color="#ff8fb0" strength={0.12} />
       {/* Rug */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.2, floorY + 0.006, 1.2]} receiveShadow>
         <circleGeometry args={[1.5, 64]} />
@@ -127,9 +151,10 @@ function Room() {
   )
 }
 
-/** Hexagon light panels on the back wall, cycling through the RGB wheel. */
+const HEX_COLORS = ['#22d3ee', '#8b5cf6', '#a3e635', '#22d3ee', '#8b5cf6', '#ff4d8d', '#60a5fa']
+
+/** Hexagon light panels on the back wall. */
 function HexPanels() {
-  const refs = useRef<THREE.MeshBasicMaterial[]>([])
   const cells: [number, number][] = [
     [0, 0],
     [1, 0],
@@ -139,25 +164,23 @@ function HexPanels() {
     [1, -0.866],
     [2.5, 0.866],
   ]
-  useFrame(({ clock }) => {
-    refs.current.forEach((m, i) => {
-      if (m) m.color.copy(rgbAt(clock.elapsedTime, i * 0.07)).multiplyScalar(1.6)
-    })
-  })
   return (
-    <group position={[0.55, 1.62, ROOM.backZ + 0.02]} scale={0.22}>
-      {cells.map(([x, y], i) => (
-        <group key={i} position={[x * 1.08, y * 1.08, 0]}>
-          <mesh rotation={[Math.PI / 2, 0, Math.PI / 6]}>
-            <cylinderGeometry args={[0.6, 0.6, 0.12, 6]} />
-            <Mat color={C.black} rough={0.4} />
-          </mesh>
-          <mesh position={[0, 0, 0.065]} rotation={[0, 0, Math.PI / 6]}>
-            <circleGeometry args={[0.5, 6]} />
-            <meshBasicMaterial ref={(m) => void (refs.current[i] = m!)} toneMapped={false} />
-          </mesh>
-        </group>
-      ))}
+    <group>
+      <LightPool position={[0.82, 1.68, ROOM.backZ + 0.006]} size={[1.6, 1.3]} color="#7c9cff" strength={0.35} />
+      <group position={[0.55, 1.62, ROOM.backZ + 0.02]} scale={0.22}>
+        {cells.map(([x, y], i) => (
+          <group key={i} position={[x * 1.08, y * 1.08, 0]}>
+            <mesh rotation={[Math.PI / 2, 0, Math.PI / 6]}>
+              <cylinderGeometry args={[0.6, 0.6, 0.12, 6]} />
+              <Mat color={C.black} rough={0.4} />
+            </mesh>
+            <mesh position={[0, 0, 0.065]} rotation={[0, 0, Math.PI / 6]}>
+              <circleGeometry args={[0.5, 6]} />
+              <meshBasicMaterial color={glow(HEX_COLORS[i], 1.4)} toneMapped={false} />
+            </mesh>
+          </group>
+        ))}
+      </group>
     </group>
   )
 }
@@ -170,7 +193,7 @@ function NeonSign() {
         <planeGeometry args={[1.5, 0.375]} />
         <meshBasicMaterial map={tex} transparent color={glow('#ffffff', 1.6)} toneMapped={false} depthWrite={false} />
       </mesh>
-      <Accent><pointLight position={[0, 0, 0.4]} color={C.pink} intensity={1.6} distance={2.2} /></Accent>
+      <LightPool position={[0, 0, -0.024]} size={[2.6, 1.3]} color={C.pink} strength={0.4} />
     </group>
   )
 }
@@ -186,6 +209,7 @@ function WallShelf() {
         <boxGeometry args={[1.0, 0.008, 0.01]} />
         <meshBasicMaterial color={glow(C.cyan, 2.5)} toneMapped={false} />
       </mesh>
+      <LightPool position={[0, -0.25, -0.15]} size={[1.6, 0.7]} color={C.cyan} strength={0.35} />
       {/* Plant */}
       <group position={[-0.38, 0.02, 0]}>
         <mesh position={[0, 0.08, 0]} castShadow>
@@ -248,13 +272,6 @@ function WallShelf() {
 /* ---------------------------------------------------------------------------------------------- */
 
 function Table() {
-  const strip = useRef<THREE.MeshBasicMaterial>(null)
-  const wash = useRef<THREE.PointLight>(null)
-  useFrame(({ clock }) => {
-    const c = rgbAt(clock.elapsedTime, 0.5)
-    strip.current?.color.copy(c).multiplyScalar(2.6)
-    wash.current?.color.copy(c)
-  })
   return (
     <group>
       <RoundedBox args={[3.6, 0.07, 1.5]} radius={0.02} smoothness={4} position={[0, -0.035, 0]} castShadow receiveShadow>
@@ -280,12 +297,13 @@ function Table() {
         <boxGeometry args={[3.1, 0.06, 0.05]} />
         <Mat color={C.metal} rough={0.35} metal={0.7} />
       </mesh>
-      {/* RGB strip behind the desk washing the wall */}
+      {/* LED strip behind the desk washing the wall */}
       <mesh position={[0, -0.08, -0.74]}>
         <boxGeometry args={[3.4, 0.012, 0.012]} />
-        <meshBasicMaterial ref={strip} toneMapped={false} />
+        <meshBasicMaterial color={glow(C.violet, 2.6)} toneMapped={false} />
       </mesh>
-      <pointLight ref={wash} position={[0, -0.25, -0.88]} intensity={3} distance={2.6} decay={1.6} />
+      <LightPool position={[0, -0.15, ROOM.backZ + 0.006]} size={[4.6, 1.6]} color={C.violet} strength={0.55} />
+      <LightPool position={[0, ROOM.floorY + 0.012, -0.55]} rotation={FLAT} size={[4, 1.4]} color={C.violet} strength={0.2} />
     </group>
   )
 }
@@ -330,7 +348,7 @@ function Monitor() {
         <planeGeometry args={[SCREEN.width - 0.1, SCREEN.height - 0.1]} />
         <meshBasicMaterial color={glow(C.violet, 1.4)} toneMapped={false} side={THREE.BackSide} />
       </mesh>
-      <Accent><pointLight position={[0, 0.8, -0.75]} color={C.violet} intensity={2.5} distance={2} /></Accent>
+      <LightPool position={[x, y, ROOM.backZ + 0.007]} size={[2.6, 1.9]} color={C.violet} strength={0.45} />
       {/* Monitor light bar */}
       <group position={[0, y + SCREEN.height / 2 + 0.045, z - 0.03]}>
         <mesh rotation={[0, 0, Math.PI / 2]}>
@@ -341,8 +359,9 @@ function Monitor() {
           <boxGeometry args={[0.46, 0.004, 0.012]} />
           <meshBasicMaterial color={glow('#fff4e0', 2)} toneMapped={false} />
         </mesh>
-        <Accent><spotLight position={[0, 0, 0.02]} target-position={[0, -0.9, 0.5]} angle={0.75} penumbra={0.8} intensity={4} distance={2} color="#fff1dc" /></Accent>
       </group>
+      {/* Light bar pooling warm light on the desk in front of the screen */}
+      <LightPool position={[0, 0.0095, 0.05]} rotation={FLAT} size={[1.9, 1.0]} color="#fff1dc" strength={0.16} />
     </Clickable>
   )
 }
@@ -400,27 +419,15 @@ function Keyboard() {
     }
     mesh.instanceMatrix.needsUpdate = true
   }, [])
-  // Rainbow wave sweeping across the keys.
-  const color = useMemo(() => new THREE.Color(), [])
-  useFrame(({ clock }) => {
-    const mesh = keys.current
-    if (!mesh) return
-    const t = clock.elapsedTime
-    for (let i = 0; i < rows * cols; i++) {
-      const c = i % cols
-      color.setHSL((c / cols) * 0.5 - t * 0.12 + 10, 0.9, 0.42)
-      mesh.setColorAt(i, color)
-    }
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
-  })
   return (
     <group position={[0, 0, 0.24]}>
       <RoundedBox args={[0.95, 0.03, 0.33]} radius={0.01} position={[0, 0.015, 0]} castShadow receiveShadow>
         <Mat color={C.black} rough={0.35} metal={0.4} />
       </RoundedBox>
-      <instancedMesh ref={keys} args={[undefined, undefined, rows * cols]}>
+      {/* White keycaps on a black board */}
+      <instancedMesh ref={keys} args={[undefined, undefined, rows * cols]} castShadow>
         <boxGeometry args={[0.05, 0.022, 0.048]} />
-        <meshBasicMaterial toneMapped={false} />
+        <meshStandardMaterial color="#eeeef2" roughness={0.45} />
       </instancedMesh>
     </group>
   )
@@ -428,8 +435,6 @@ function Keyboard() {
 
 function DeskMat() {
   const tex = useMemo(() => createDeskMatTexture(), [])
-  const edge = useRef<THREE.MeshBasicMaterial>(null)
-  useFrame(({ clock }) => edge.current?.color.copy(rgbAt(clock.elapsedTime, 0.25)).multiplyScalar(2))
   return (
     <group position={[0.32, 0, 0.28]}>
       <mesh position={[0, 0.0045, 0]} receiveShadow>
@@ -443,15 +448,13 @@ function DeskMat() {
       </mesh>
       <mesh position={[0, 0.0025, 0]}>
         <boxGeometry args={[2.02, 0.004, 0.70]} />
-        <meshBasicMaterial ref={edge} toneMapped={false} />
+        <meshBasicMaterial color={glow(C.cyan, 1.6)} toneMapped={false} />
       </mesh>
     </group>
   )
 }
 
 function Mouse() {
-  const logo = useRef<THREE.MeshBasicMaterial>(null)
-  useFrame(({ clock }) => logo.current?.color.copy(rgbAt(clock.elapsedTime, 0.6)).multiplyScalar(2.4))
   return (
     <group position={[0.85, 0, 0.3]} rotation={[0, -0.15, 0]}>
       <mesh position={[0, 0.026, 0]} scale={[0.052, 0.026, 0.085]} castShadow>
@@ -460,7 +463,7 @@ function Mouse() {
       </mesh>
       <mesh position={[0, 0.047, 0.03]} rotation={[-Math.PI / 2 + 0.3, 0, 0]}>
         <circleGeometry args={[0.012, 16]} />
-        <meshBasicMaterial ref={logo} toneMapped={false} />
+        <meshBasicMaterial color={glow(C.violet, 2.4)} toneMapped={false} />
       </mesh>
     </group>
   )
@@ -468,13 +471,11 @@ function Mouse() {
 
 function PCTower() {
   const fans = useRef<THREE.Group>(null)
-  const rings = useRef<THREE.MeshBasicMaterial[]>([])
-  useFrame(({ clock }, dt) => {
+  useFrame((_, dt) => {
     fans.current?.children.forEach((f) => {
       const blades = f.getObjectByName('blades')
       if (blades) blades.rotation.z -= dt * 6
     })
-    rings.current.forEach((m, i) => m?.color.copy(rgbAt(clock.elapsedTime, i * 0.12)).multiplyScalar(2.4))
   })
   const W = 0.58
   const H = 0.66
@@ -522,7 +523,7 @@ function PCTower() {
           <group key={fy} position={[W / 2 - 0.09, fy, 0.04]}>
             <mesh>
               <torusGeometry args={[0.065, 0.007, 8, 32]} />
-              <meshBasicMaterial ref={(m) => void (rings.current[i] = m!)} toneMapped={false} />
+              <meshBasicMaterial color={glow([C.cyan, C.violet, C.pink][i], 2.2)} toneMapped={false} />
             </mesh>
             <group name="blades">
               {[0, 1, 2, 3, 4].map((b) => (
@@ -535,7 +536,7 @@ function PCTower() {
           </group>
         ))}
       </group>
-      <Accent><pointLight position={[0, H / 2, D / 2 + 0.15]} color={C.violet} intensity={1.2} distance={1.2} /></Accent>
+      <LightPool position={[0, 0.0095, D / 2 + 0.2]} rotation={FLAT} size={[0.9, 0.55]} color={C.violet} strength={0.45} />
     </group>
   )
 }
@@ -610,8 +611,11 @@ function Mug() {
 
 function Chair() {
   const accent = { color: C.violet, rough: 0.6 }
+  // Charcoal rather than near-black so the chair still reads against the dark floor.
+  const shell = '#26242f'
   return (
-    <group position={[0.15, ROOM.floorY, 1.4]} rotation={[0, -0.3, 0]}>
+    // Scaled up from the original model: the seat now sits at a believable height for the desk.
+    <group position={[0.15, ROOM.floorY, 1.45]} rotation={[0, -0.3, 0]} scale={[1.3, 1.4, 1.3]}>
       {/* 5-star base */}
       {[0, 1, 2, 3, 4].map((i) => (
         <group key={i} rotation={[0, (i / 5) * Math.PI * 2, 0]}>
@@ -631,7 +635,7 @@ function Chair() {
       </mesh>
       {/* Seat */}
       <RoundedBox args={[0.6, 0.12, 0.56]} radius={0.05} position={[0, 0.66, 0]} castShadow>
-        <Mat color={C.black} rough={0.7} />
+        <Mat color={shell} rough={0.7} />
       </RoundedBox>
       {/* Seat bolsters */}
       {[-1, 1].map((s) => (
@@ -642,7 +646,7 @@ function Chair() {
       {/* Racing-style back */}
       <group position={[0, 1.1, 0.3]} rotation={[-0.12, 0, 0]}>
         <RoundedBox args={[0.56, 0.86, 0.11]} radius={0.05} castShadow>
-          <Mat color={C.black} rough={0.7} />
+          <Mat color={shell} rough={0.7} />
         </RoundedBox>
         {[-1, 1].map((s) => (
           <RoundedBox key={s} args={[0.09, 0.8, 0.14]} radius={0.04} position={[s * 0.26, -0.02, -0.01]} castShadow>
@@ -661,7 +665,7 @@ function Chair() {
             <Mat color={C.black} rough={0.4} />
           </mesh>
           <RoundedBox args={[0.08, 0.04, 0.26]} radius={0.015} position={[0, 0.03, 0]} castShadow>
-            <Mat color={C.black} rough={0.6} />
+            <Mat color={shell} rough={0.6} />
           </RoundedBox>
         </group>
       ))}

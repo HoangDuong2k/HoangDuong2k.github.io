@@ -312,7 +312,7 @@ export function createCodeTexture() {
   }
 }
 
-/** Neon wall sign; the bright core blooms in post. */
+/** Neon wall sign; the soft halo is painted into the texture (there is no bloom pass). */
 export function createNeonTexture(text: string, color: string) {
   const W = 1024
   const H = 256
@@ -517,4 +517,27 @@ export function createZzzTexture() {
   ctx.fillStyle = '#f5f3ff'
   ctx.fillText('Z', S / 2, S / 2 + 4)
   return toTexture(canvas)
+}
+
+/* -------------------------------------------------------------------------------------------------
+ * Baked light: a soft radial falloff, tinted per use and drawn additively on walls and the desk.
+ * -----------------------------------------------------------------------------------------------*/
+
+let glowTex: THREE.Texture | null = null
+
+/** Shared by every light pool; never disposed (it is tiny and lives as long as the scene). */
+export function getGlowTexture() {
+  if (glowTex) return glowTex
+  const S = 256
+  const { canvas, ctx } = makeCanvas(S, S)
+  const g = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2)
+  // Roughly inverse-square: bright core, long soft tail, zero at the edge.
+  g.addColorStop(0, 'rgba(255,255,255,1)')
+  g.addColorStop(0.25, 'rgba(255,255,255,0.55)')
+  g.addColorStop(0.55, 'rgba(255,255,255,0.18)')
+  g.addColorStop(1, 'rgba(255,255,255,0)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, S, S)
+  glowTex = toTexture(canvas)
+  return glowTex
 }

@@ -13,7 +13,7 @@ import { focusOn, setState, useStore, type Focus } from '@/lib/store'
 import { profile, projects } from '@/data/profile'
 import { detectTier } from '@/lib/quality'
 
-// three.js + postprocessing is the heavy part of the bundle: the HUD and boot
+// three.js is the heavy part of the bundle: the HUD and boot
 // screen paint first, the scene streams in behind them. Overlays load on demand.
 const Scene = lazy(() => import('./scene/Scene').then((m) => ({ default: m.Scene })))
 const Paper = lazy(() => import('./overlay/Paper').then((m) => ({ default: m.Paper })))

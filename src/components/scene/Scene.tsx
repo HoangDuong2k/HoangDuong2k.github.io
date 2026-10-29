@@ -1,7 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Environment, Lightformer, PerformanceMonitor } from '@react-three/drei'
-import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { getState, setState, useStore } from '@/lib/store'
 import { QUALITY, lowerTier, rememberTier } from '@/lib/quality'
@@ -55,6 +54,8 @@ function AdaptiveQuality({ locked }: { locked: boolean }) {
 export function Scene({ lockedTier }: { lockedTier: boolean }) {
   const tier = useStore((s) => s.tier)
   const q = QUALITY[tier]
+  // Context attributes can't change after creation, so MSAA follows the tier the visit started on.
+  const [antialias] = useState(q.antialias)
   // Once an overlay fully owns the view the 3D scene can stop rendering.
   const covered = useStore((s) => s.focus !== null && s.arrived)
 
@@ -65,7 +66,7 @@ export function Scene({ lockedTier }: { lockedTier: boolean }) {
       frameloop={covered ? 'never' : 'always'}
       camera={{ fov: 40, position: HOME.pos, near: 0.05, far: 60 }}
       gl={{
-        antialias: !q.bloom,
+        antialias,
         powerPreference: 'high-performance',
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.05,
@@ -78,8 +79,9 @@ export function Scene({ lockedTier }: { lockedTier: boolean }) {
       <color attach="background" args={['#0c0b14']} />
       <fog attach="fog" args={['#0c0b14', 9, 16]} />
 
-      {/* Moody base: low ambient, a cool key light, coloured fills from the RGB gear. */}
-      <hemisphereLight args={['#b9b4ff', '#1a1626', q.accentLights ? 0.35 : 0.6]} />
+      {/* Moody base: low ambient and a cool key light. The coloured light from the gear is baked
+          into additive "light pools" (see Desk), so it costs nothing per frame. */}
+      <hemisphereLight args={['#b9b4ff', '#1a1626', q.envResolution ? 0.5 : 1.1]} />
       <directionalLight
         position={[3, 6, 4]}
         intensity={0.9}
@@ -93,24 +95,22 @@ export function Scene({ lockedTier }: { lockedTier: boolean }) {
         shadow-normalBias={0.02}
       />
       <pointLight position={[2.6, 1.6, 2.4]} intensity={2} distance={7} color="#7dd3fc" />
+      {/* Without reflections dark gloss (chair, desk, case) loses its sheen; a shadowless light
+          from the viewer's side gives it back for the cost of one dot product per pixel. */}
+      {!q.envResolution && <directionalLight position={[4, 2.5, 6]} intensity={0.9} color="#c7bfff" />}
       {q.shadowMap > 0 && <ShadowBaker size={q.shadowMap} />}
 
       {/* Procedural studio reflections, no HDR download needed. */}
-      <Environment key={q.envResolution} resolution={q.envResolution} frames={1}>
-        <Lightformer form="rect" intensity={2} color="#8b5cf6" position={[-3, 2, 2]} scale={[3, 2, 1]} />
-        <Lightformer form="rect" intensity={1.5} color="#22d3ee" position={[3, 2, 2]} scale={[3, 2, 1]} />
-        <Lightformer form="rect" intensity={1} color="#ffffff" position={[0, 4, 0]} rotation-x={Math.PI / 2} scale={[4, 4, 1]} />
-      </Environment>
+      {q.envResolution > 0 && (
+        <Environment key={q.envResolution} resolution={q.envResolution} frames={1}>
+          <Lightformer form="rect" intensity={2} color="#8b5cf6" position={[-3, 2, 2]} scale={[3, 2, 1]} />
+          <Lightformer form="rect" intensity={1.5} color="#22d3ee" position={[3, 2, 2]} scale={[3, 2, 1]} />
+          <Lightformer form="rect" intensity={1} color="#ffffff" position={[0, 4, 0]} rotation-x={Math.PI / 2} scale={[4, 4, 1]} />
+        </Environment>
+      )}
 
       <Desk />
       <CameraRig />
-
-      {q.bloom && (
-        <EffectComposer multisampling={q.multisampling}>
-          <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.85} radius={0.7} resolutionScale={0.5} />
-          <Vignette offset={0.25} darkness={0.65} />
-        </EffectComposer>
-      )}
     </Canvas>
   )
 }
