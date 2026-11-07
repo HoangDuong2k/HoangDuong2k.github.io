@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { focusOn } from '@/lib/store'
-import { profile, projects, stats } from '@/data/profile'
+import { profile, projects } from '@/data/profile'
 import { Terminal } from './Terminal'
 
 type AppId = 'terminal' | 'projects' | 'about' | 'mail'
@@ -112,14 +112,6 @@ function AboutApp() {
         </div>
       </div>
       <p className="mt-4 text-sm leading-relaxed text-black/75">{profile.summary}</p>
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-xl bg-[#7C6CFF]/8 p-3">
-            <div className="font-bold">{s.value}</div>
-            <div className="text-[11px] text-black/55">{s.label}</div>
-          </div>
-        ))}
-      </div>
       <p className="mt-4 rounded-xl bg-[#FFE066]/50 p-3 text-sm">🎯 {profile.goal}</p>
     </div>
   )

@@ -322,7 +322,7 @@ function Monitor() {
     m.scale.set(c.w * SCREEN.width, c.h * SCREEN.height, 1)
   })
   return (
-    <Clickable id="computer" label="Log in to hoang.os" hint="click" labelOffset={[0, 0.66, 0]} still>
+    <group>
       {/* Stand */}
       <RoundedBox args={[0.42, 0.02, 0.26]} radius={0.008} position={[0, 0.01, -0.5]} castShadow>
         <Mat color={C.metal} rough={0.3} metal={0.8} />
@@ -335,14 +335,17 @@ function Monitor() {
       <RoundedBox args={[SCREEN.width + 0.04, SCREEN.height + 0.05, 0.04]} radius={0.012} position={[x, y, z - 0.021]} castShadow>
         <Mat color={C.black} rough={0.4} />
       </RoundedBox>
-      <mesh position={[x, y, z + 0.001]}>
-        <planeGeometry args={[SCREEN.width, SCREEN.height]} />
-        <meshBasicMaterial map={screen.texture} toneMapped={false} />
-      </mesh>
-      <mesh ref={caret}>
-        <planeGeometry />
-        <meshBasicMaterial color="#ffffff" toneMapped={false} />
-      </mesh>
+      {/* Only the screen itself opens the OS; stand, bezel and light bar are just furniture */}
+      <Clickable id="computer" label="Log in to hoang.os" hint="click" labelOffset={[0, 0.66, 0]} still>
+        <mesh position={[x, y, z + 0.001]}>
+          <planeGeometry args={[SCREEN.width, SCREEN.height]} />
+          <meshBasicMaterial map={screen.texture} toneMapped={false} />
+        </mesh>
+        <mesh ref={caret} raycast={() => null}>
+          <planeGeometry />
+          <meshBasicMaterial color="#ffffff" toneMapped={false} />
+        </mesh>
+      </Clickable>
       {/* Bias light behind the monitor */}
       <mesh position={[x, y, z - 0.045]}>
         <planeGeometry args={[SCREEN.width - 0.1, SCREEN.height - 0.1]} />
@@ -362,7 +365,7 @@ function Monitor() {
       </group>
       {/* Light bar pooling warm light on the desk in front of the screen */}
       <LightPool position={[0, 0.0095, 0.05]} rotation={FLAT} size={[1.9, 1.0]} color="#fff1dc" strength={0.16} />
-    </Clickable>
+    </group>
   )
 }
 

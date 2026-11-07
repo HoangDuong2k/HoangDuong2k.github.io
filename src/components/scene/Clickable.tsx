@@ -1,8 +1,8 @@
 import { useRef, type ReactNode } from 'react'
-import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { focusOn, setState, useStore, type Focus } from '@/lib/store'
+import { focusOn, getState, setState, useStore, type Focus } from '@/lib/store'
 
 interface Props {
   id: Exclude<Focus, null>
@@ -16,11 +16,36 @@ interface Props {
   still?: boolean
 }
 
+const probe = new THREE.Raycaster()
+
+/** Opaque, visible geometry. Light pools, steam and sprites don't depth-write, so they never block. */
+function solid(o: THREE.Object3D) {
+  if (!(o as THREE.Mesh).isMesh) return false
+  for (let p: THREE.Object3D | null = o; p; p = p.parent) if (!p.visible) return false
+  const m = (o as THREE.Mesh).material
+  return ([] as THREE.Material[]).concat(m).every((mat) => mat.depthWrite !== false)
+}
+
 /** Hover lift + label + click-to-focus. Clicks that were really drags are ignored. */
 export function Clickable({ id, label, hint, labelOffset = [0, 0.25, 0], children, position, rotation, still = false }: Props) {
   const group = useRef<THREE.Group>(null)
   const hovered = useStore((s) => s.hovered === id)
   const idle = useStore((s) => s.focus === null)
+  const scene = useThree((s) => s.scene)
+
+  /**
+   * R3F only raycasts objects that have handlers, so a keyboard or headset in front of the screen
+   * would not block it. Only count the pointer when the nearest solid surface under it is ours.
+   */
+  const inFront = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
+    const g = group.current
+    if (!g) return false
+    probe.ray.copy(e.ray)
+    probe.camera = e.camera
+    const hit = probe.intersectObject(scene, true).find((h) => solid(h.object))
+    for (let o: THREE.Object3D | null = hit?.object ?? null; o; o = o.parent) if (o === g) return true
+    return false
+  }
 
   useFrame((_, dt) => {
     const g = group.current
@@ -32,25 +57,27 @@ export function Clickable({ id, label, hint, labelOffset = [0, 0.25, 0], childre
     g.scale.setScalar(s)
   })
 
-  const over = (e: ThreeEvent<PointerEvent>) => {
-    e.stopPropagation()
-    setState({ hovered: id })
-    document.body.style.cursor = 'pointer'
+  const move = (e: ThreeEvent<PointerEvent>) => {
+    const on = inFront(e)
+    if (on) e.stopPropagation()
+    if (on === (getState().hovered === id)) return
+    setState({ hovered: on ? id : null })
+    document.body.style.cursor = on ? 'pointer' : ''
   }
   const out = () => {
-    setState({ hovered: null })
+    if (getState().hovered === id) setState({ hovered: null })
     document.body.style.cursor = ''
   }
   const click = (e: ThreeEvent<MouseEvent>) => {
+    if (e.delta > 6 || !inFront(e)) return
     e.stopPropagation()
-    if (e.delta > 6) return
     document.body.style.cursor = ''
     focusOn(id)
   }
 
   return (
     <group position={position} rotation={rotation}>
-      <group ref={group} onPointerOver={idle ? over : undefined} onPointerOut={out} onClick={idle ? click : undefined}>
+      <group ref={group} onPointerMove={idle ? move : undefined} onPointerOut={out} onClick={idle ? click : undefined}>
         {children}
       </group>
       {hovered && idle && (

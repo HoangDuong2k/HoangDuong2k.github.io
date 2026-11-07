@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { profile } from '@/data/profile'
+import { profile, projects } from '@/data/profile'
 
 const SANS = '"Geist Variable", system-ui, sans-serif'
 const MONO = '"Geist Mono Variable", ui-monospace, monospace'
@@ -127,7 +127,10 @@ export function createResumeTexture() {
     ctx.fillText(profile.nameAscii, 44, 92)
     ctx.font = `500 22px ${SANS}`
     ctx.fillStyle = '#7C6CFF'
-    ctx.fillText(`${profile.role} · ${profile.stack}`, 44, 128)
+    ctx.fillText(profile.role, 44, 128)
+    ctx.font = `500 18px ${SANS}`
+    ctx.fillStyle = 'rgba(29,27,46,0.6)'
+    ctx.fillText(profile.stack, 44, 154)
     const section = (title: string, y: number, n: number) => {
       ctx.fillStyle = '#1d1b2e'
       ctx.font = `700 18px ${SANS}`
@@ -173,7 +176,7 @@ export function createFolderLabelTexture() {
     ctx.fillText('PROJECTS', W / 2, 192)
     ctx.font = `500 24px ${MONO}`
     ctx.fillStyle = '#FF6B8B'
-    ctx.fillText('case studies · 05', W / 2, 238)
+    ctx.fillText(`case studies · ${String(projects.length).padStart(2, '0')}`, W / 2, 238)
     tex.needsUpdate = true
   }
   draw()
@@ -225,8 +228,8 @@ export function createNoteTexture() {
     ctx.font = `600 30px ${SANS}`
     ctx.fillText('next goal:', 24, 64)
     ctx.font = `700 34px ${SANS}`
-    ctx.fillText('full-stack', 24, 120)
-    ctx.fillText('→ architect', 24, 168)
+    ctx.fillText('solution', 24, 120)
+    ctx.fillText('architect', 24, 168)
     ctx.font = `500 22px ${MONO}`
     ctx.fillText('— me, 2026', 24, 220)
     tex.needsUpdate = true

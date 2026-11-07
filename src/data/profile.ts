@@ -4,32 +4,26 @@ export const profile = {
   name: 'Dương Việt Hoàng',
   nameAscii: 'Duong Viet Hoang',
   handle: 'hoangduong2k',
-  role: 'Frontend Developer',
-  stack: 'React · TypeScript',
-  location: 'Đại Từ, Hà Nội',
+  role: 'Software Developer',
+  stack: 'PHP · Laravel · React · TypeScript',
+  location: 'Hanoi, Vietnam',
   email: 'hoangblack2000@gmail.com',
   github: 'https://github.com/HoangDuong2k',
   linkedin: 'https://linkedin.com/in/hoangduong2k',
   years: 3,
   summary:
-    'Frontend Developer with 3 years of experience, including a year building a production micro-frontend low-code CRM with React and TypeScript. Sole frontend owner of four customer-facing modules, core contributor to a shared component library, and a strong advocate of automated testing. I also build open-source desktop apps and a React UI library, and work daily with AI coding agents.',
-  goal: 'Growing from frontend into full-stack engineering, and longer term, solution architecture.',
+    'Software developer with 3 years of experience building web applications with PHP/Laravel and React/TypeScript. I own features end to end on a multi-tenant SaaS platform, from APIs and third-party integrations to UI, tests and release. I use AI coding tools daily and review every change they produce.',
+  goal: 'Keep owning features end to end, and grow into designing the systems around them: solution architecture.',
 }
 
-export const stats = [
-  { value: '300+', label: 'unit-test files added' },
-  { value: '5% → 56%', label: 'UI-library commits with tests' },
-  { value: '200+', label: 'tickets across 16 repos' },
-  { value: '4', label: 'production modules owned' },
-]
-
 export const skills: Record<string, string[]> = {
-  Languages: ['TypeScript', 'JavaScript (ES6+)', 'HTML5', 'CSS3/SASS'],
-  Frontend: ['React 18/19', 'Next.js', 'Astro', 'Vue/Nuxt', 'Tailwind v4', 'Radix UI', 'Redux Toolkit', 'Zustand', 'TanStack Query', 'React Hook Form', 'Zod'],
-  Architecture: ['Micro-frontends (Module Federation)', 'Design systems', 'Real-time UI (WebSocket)', 'Electron', 'Browser extensions (MV3)'],
-  'Graphics & media': ['React Three Fiber', 'Web Audio API', 'Canvas/Skia', 'FFmpeg', 'Monaco Editor'],
-  Testing: ['Vitest', 'React Testing Library', 'MSW', 'Playwright', 'GitHub Actions', 'Jenkins', 'Docker'],
-  AI: ['Claude Code', 'Agent Skills', 'MCP servers', 'Whisper / ONNX Runtime', 'UI for AI features'],
+  Languages: ['PHP', 'TypeScript', 'JavaScript', 'SQL', 'HTML', 'CSS'],
+  Backend: ['Laravel', 'REST API', 'Moodle', 'PHPUnit'],
+  Frontend: ['React', 'Next.js', 'Vue/Nuxt', 'Tailwind CSS', 'Redux Toolkit', 'TanStack Query'],
+  Database: ['MySQL', 'PostgreSQL', 'MongoDB', 'Elasticsearch', 'Redis', 'Kafka'],
+  'DevOps & Testing': ['Docker', 'Kubernetes', 'Jenkins', 'GitHub Actions', 'Vitest', 'Playwright'],
+  AI: ['RAG', 'MCP servers', 'Claude Code'],
+  'Foreign language': ['English (professional working proficiency)'],
 }
 
 export interface Job {
@@ -45,41 +39,34 @@ export interface Job {
 export const experience: Job[] = [
   {
     company: 'Stringee',
-    product: 'Cogover — low-code CRM & business platform',
-    role: 'Frontend Developer',
+    product: 'Cogover low-code CRM · Hanoi, Vietnam',
+    role: 'Software Developer',
     period: '10/2025 – now',
     hash: 'a1f9c3e',
-    stack: ['React 18', 'TypeScript', 'Module Federation', 'Redux Toolkit', 'TanStack Query', 'WebSocket', 'Vitest + MSW'],
+    stack: ['PHP 8', 'Laravel 11', 'React 18', 'TypeScript', 'MySQL', 'Elasticsearch', 'Redis', 'Kafka', 'Docker', 'Kubernetes', 'Jenkins'],
     points: [
-      'Sole frontend owner of SLA Management, Goal Management (OKR/KPI), Data Library (knowledge base for AI Agents) and Zalo/WhatsApp template messaging.',
-      'Core contributor to the shared UI library consumed by ~10 micro-frontends; re-architected the Form Builder Layout Rule engine with revision-tracked run state.',
-      'Real-time call supervision: snapshot + delta sync over WebSocket with sequence numbers, tombstones and a reconciliation window.',
-      'Live SLA countdowns pushed over WebSocket straight into the React Query cache.',
-      'Schema-change safety: async field-type conversion with cross-app progress and impact analysis with deep links.',
-      'Added 300+ unit-test files across 9 repos; UI-library commits shipping with tests went from ~5% to ~56%.',
+      'Own 4 production modules of a multi-tenant SaaS platform (SLA, OKR/KPI, AI knowledge base, Zalo/WhatsApp messaging), from requirements to production.',
+      'Build Laravel REST APIs (validation, API Resources, Eloquent) and integrate the Zalo and WhatsApp Business APIs; write Artisan commands for data migration.',
+      'Build real-time UIs over WebSocket (SLA countdowns, call-center supervision) and large data lists with cursor-based pagination.',
+      "Contribute to the shared React component library used by ~10 micro-frontends; re-architect the Form Builder's rule engine.",
+      'Extend the Next.js marketing website, blog and docs with the team (server rendering, SEO).',
+      'Add PHPUnit tests and 300+ frontend test files, raising commits shipped with tests from ~5% to ~56%; deliver 200+ tickets.',
+      'Investigate production issues using request-ID logs and tracing.',
     ],
   },
   {
-    company: 'HUST Digital Transformation Center',
-    product: 'University systems: LMS, facilities, dormitory',
-    role: 'Frontend Developer',
+    company: 'Digital Transformation Center, HUST',
+    product: 'Hanoi University of Science and Technology · Hanoi, Vietnam',
+    role: 'Web Developer',
     period: '10/2023 – 09/2025',
     hash: '7be20d4',
-    stack: ['React', 'Next.js', 'Nuxt', 'Moodle/PHP', 'Tailwind', 'OAuth2'],
+    stack: ['PHP', 'Laravel', 'Moodle', 'MySQL', 'PostgreSQL', 'React', 'Next.js', 'Nuxt.js', 'TypeScript', 'Docker'],
     points: [
-      'Upgraded the university LMS from Moodle 3.8 to 4.5 with a custom theme, plus a Next.js admin system.',
-      'Facility Management System: business processes with stakeholders, JWT/OAuth2, large tables tuned for scale.',
-      'Dormitory & Medical Training Center: registration and online payments via FPT and BIDV gateways.',
+      'Upgraded the university LMS from Moodle 3.8 to 4.5 (PHP 7.4 to 8.1); built a custom PHP theme from Figma designs and a web-service plugin for a Next.js admin system.',
+      'Built the Laravel backend and Nuxt/React frontends for dormitory and training-center systems, with FPT and BIDV payment gateways (signed IPN callbacks, reconciliation, queued emails).',
+      'Built the Next.js frontend of an AI research-assistant (RAG) platform: paper search, chat with cited answers, personal library; co-designed the PostgreSQL schema (23 tables); deployed with Docker Compose.',
+      'Built a facility management system with React, JWT/OAuth2 and role-based access; gathered requirements with stakeholders.',
     ],
-  },
-  {
-    company: 'Viettel High Tech · Techvico',
-    product: 'Internships',
-    role: 'Intern',
-    period: '05 – 07/2023',
-    hash: '02c4a19',
-    stack: ['C++', 'SQL', 'Visual SLAM'],
-    points: ['Data structures, SQL and visual SLAM research.'],
   },
 ]
 
@@ -105,7 +92,7 @@ export const projects: Project[] = [
   {
     id: 'budkin',
     name: 'Budkin',
-    tagline: '3D desktop task manager that Claude can drive',
+    tagline: '3D desktop task manager with an MCP server that lets Claude manage tasks',
     color: '#7C6CFF',
     stack: ['Electron', 'React 19', 'React Three Fiber', 'MCP SDK', 'SQLite'],
     highlights: [
@@ -120,7 +107,7 @@ export const projects: Project[] = [
   {
     id: 'mpv',
     name: 'Playlist Video Maker',
-    tagline: 'Desktop editor for music-playlist videos',
+    tagline: 'Video editor with parallel export and on-device AI lyric sync',
     color: '#FF6B8B',
     stack: ['Electron', 'Web Audio API', 'FFmpeg', 'Skia', 'Whisper + ONNX'],
     highlights: [
@@ -135,7 +122,7 @@ export const projects: Project[] = [
   {
     id: 'momi',
     name: 'momi-ui',
-    tagline: 'React component library — this site uses it',
+    tagline: 'React library of ~60 accessible components, shipped with an Agent Skill — this site uses it',
     color: '#2BB89A',
     stack: ['React 19', 'Tailwind v4', 'Radix UI', 'TanStack Virtual'],
     highlights: [
@@ -146,31 +133,5 @@ export const projects: Project[] = [
     metric: { value: '~60', label: 'components' },
     demo: 'https://hoangduong2k.github.io/momi-ui',
     repo: 'https://github.com/HoangDuong2k/momi-ui',
-  },
-  {
-    id: 'pip',
-    name: 'PiP Anywhere',
-    tagline: 'Keep any browser window on top, and see-through',
-    color: '#FFB020',
-    stack: ['Browser extension', 'Native host', 'Windows', 'GNOME'],
-    highlights: [
-      'Picture-in-picture for a whole browser window: tabs, extensions and typing keep working.',
-      'Real transparency (20–100%) with clear-on-hover, bridging what extensions cannot do through a native host.',
-    ],
-    metric: { value: '20–100%', label: 'real opacity' },
-    repo: 'https://github.com/HoangDuong2k/pip-anywhere',
-  },
-  {
-    id: 'ticket2h',
-    name: 'Ticket2h',
-    tagline: 'Event ticketing on microservices — my full-stack playground',
-    color: '#3E8BFF',
-    stack: ['Spring Boot', 'Java', 'PostgreSQL', 'Kafka', 'React 19', 'momi-ui'],
-    highlights: [
-      'Seat maps, holds, orders, QR tickets, check-in and transfers in a core service; identity and notifications split into their own services.',
-      'React SPA with API types generated from each service’s OpenAPI.',
-    ],
-    metric: { value: '3+', label: 'services' },
-    repo: 'https://github.com/ticket2h',
   },
 ]

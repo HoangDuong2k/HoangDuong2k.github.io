@@ -4,7 +4,7 @@ import App from '@/components/App'
 import { profile, projects } from '@/data/profile'
 ---
 
-<Base title={`${profile.nameAscii} · Frontend Developer`}>
+<Base title={`${profile.nameAscii} · ${profile.role}`}>
   <App client:only="react" />
   <!-- Readable without JS / for crawlers; the full text lives on /resume. -->
   <noscript>

@@ -1,6 +1,6 @@
 ---
 import Base from '@/layouts/Base.astro'
-import { education, experience, profile, projects, skills, stats } from '@/data/profile'
+import { education, experience, profile, projects, skills } from '@/data/profile'
 ---
 
 <Base title={`${profile.nameAscii} · Resume`}>
@@ -37,14 +37,6 @@ import { education, experience, profile, projects, skills, stats } from '@/data/
       </div>
 
       <p class="mt-6 leading-relaxed text-black/75">{profile.summary}</p>
-      <div class="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {stats.map((s) => (
-          <div class="rounded-xl bg-[#7C6CFF]/8 p-3">
-            <div class="text-lg font-bold">{s.value}</div>
-            <div class="text-[11px] leading-tight text-black/60">{s.label}</div>
-          </div>
-        ))}
-      </div>
 
       <h2 class="mt-9 mb-3 text-xs font-bold tracking-[0.18em] text-[#7C6CFF] uppercase">Experience</h2>
       <div class="space-y-6">

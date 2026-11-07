@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { focusOn, type DocId } from '@/lib/store'
-import { education, experience, profile, projects, skills, stats } from '@/data/profile'
+import { education, experience, profile, projects, skills } from '@/data/profile'
 
 function Tag({ children, color }: { children: ReactNode; color?: string }) {
   return (
@@ -32,15 +32,6 @@ function ResumeDoc() {
         </a>
       </div>
       <p className="mt-4 leading-relaxed text-black/75">{profile.summary}</p>
-
-      <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="rounded-xl bg-[#7C6CFF]/8 p-3">
-            <div className="text-lg font-bold">{s.value}</div>
-            <div className="text-[11px] leading-tight text-black/60">{s.label}</div>
-          </div>
-        ))}
-      </div>
 
       <H>Experience</H>
       <div className="space-y-6">
@@ -175,10 +166,10 @@ function NoteDoc() {
   return (
     <div className="-rotate-1 bg-[#FFE066] p-7 text-[#4a3b00] shadow-xl">
       <p className="font-mono text-xs opacity-70">note to self</p>
-      <p className="mt-3 text-2xl font-bold">Next goal: full-stack → solution architect.</p>
+      <p className="mt-3 text-2xl font-bold">Next goal: solution architect.</p>
       <p className="mt-3 text-sm leading-relaxed">
-        Frontend is home. Ticket2h (Spring Boot, Kafka, PostgreSQL) is where I practise the other half: service boundaries,
-        events, contracts generated from OpenAPI.
+        I already own features end to end: Laravel APIs, React UIs, tests and release. Next is designing the systems around
+        them.
       </p>
     </div>
   )

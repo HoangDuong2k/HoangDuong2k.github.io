@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { experience, profile, projects, skills, stats } from '@/data/profile'
+import { experience, profile, projects, skills } from '@/data/profile'
 
 export interface TerminalApi {
   openProject: (id: string) => void
@@ -24,7 +24,7 @@ const FILES: Record<string, string> = {
   'contact.txt': `${profile.email}\n${profile.github}\n${profile.linkedin}`,
 }
 
-const COMMANDS = ['help', 'whoami', 'neofetch', 'ls', 'cat', 'projects', 'open', 'git', 'skills', 'stats', 'contact', 'clear', 'date', 'echo', 'sudo', 'exit']
+const COMMANDS = ['help', 'whoami', 'neofetch', 'ls', 'cat', 'projects', 'open', 'git', 'skills', 'contact', 'clear', 'date', 'echo', 'sudo', 'exit']
 
 function Neofetch() {
   const art = String.raw`
@@ -38,9 +38,9 @@ function Neofetch() {
     ['OS', 'hoang.os 2026 (React Three Fiber kernel)'],
     ['Role', `${profile.role} @ Stringee`],
     ['Uptime', `${profile.years} years in production`],
-    ['Shell', 'TypeScript, strict mode'],
+    ['Shell', 'PHP 8 · Laravel 11 · TypeScript'],
     ['UI', 'momi-ui · Tailwind v4 · Radix'],
-    ['Tests', '300+ files · 1,021 green in CI'],
+    ['Tests', 'PHPUnit · 300+ frontend test files'],
     ['Pair', 'Claude Code + MCP'],
   ]
   return (
@@ -115,7 +115,6 @@ export function Terminal({ api }: { api: TerminalApi }) {
               ['open <project>', 'open a project window'],
               ['git log', 'career history'],
               ['skills', 'tech stack'],
-              ['stats', 'numbers I am proud of'],
               ['contact', 'how to reach me'],
               ['clear', 'clear the screen'],
               ['exit', 'back to the desk'],
@@ -226,18 +225,6 @@ export function Terminal({ api }: { api: TerminalApi }) {
               <div key={g}>
                 <span className="inline-block w-36 text-violet-300">{g}</span>
                 <span className="text-white/80">{l.join(', ')}</span>
-              </div>
-            ))}
-          </div>,
-        )
-        break
-      case 'stats':
-        print(
-          <div className="space-y-0.5">
-            {stats.map((s) => (
-              <div key={s.label}>
-                <span className="inline-block w-24 font-bold text-emerald-300">{s.value}</span>
-                {s.label}
               </div>
             ))}
           </div>,
