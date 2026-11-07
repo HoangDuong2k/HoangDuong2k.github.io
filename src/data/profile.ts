@@ -18,10 +18,10 @@ export const profile = {
 
 export const skills: Record<string, string[]> = {
   Languages: ['PHP', 'TypeScript', 'JavaScript', 'SQL', 'HTML', 'CSS'],
-  Backend: ['Laravel', 'REST API', 'Moodle', 'PHPUnit'],
+  Backend: ['Laravel', 'REST API', 'Queues', 'Moodle', 'PHPUnit'],
   Frontend: ['React', 'Next.js', 'Vue/Nuxt', 'Tailwind CSS', 'Redux Toolkit', 'TanStack Query'],
   Database: ['MySQL', 'PostgreSQL', 'MongoDB', 'Elasticsearch', 'Redis', 'Kafka'],
-  'DevOps & Testing': ['Docker', 'Kubernetes', 'Jenkins', 'GitHub Actions', 'Vitest', 'Playwright'],
+  'DevOps & Testing': ['Docker', 'Kubernetes', 'CI/CD (Jenkins, GitHub Actions)', 'Vitest', 'Playwright'],
   AI: ['RAG', 'MCP servers', 'Claude Code'],
   'Foreign language': ['English (professional working proficiency)'],
 }
@@ -47,11 +47,12 @@ export const experience: Job[] = [
     points: [
       'Own 4 production modules of a multi-tenant SaaS platform (SLA, OKR/KPI, AI knowledge base, Zalo/WhatsApp messaging), from requirements to production.',
       'Build Laravel REST APIs (validation, API Resources, Eloquent) and integrate the Zalo and WhatsApp Business APIs; write Artisan commands for data migration.',
+      'Build a bulk Excel import (preview, column mapping, validation) that runs in the background on Laravel queue jobs.',
       'Build real-time UIs over WebSocket (SLA countdowns, call-center supervision) and large data lists with cursor-based pagination.',
       "Contribute to the shared React component library used by ~10 micro-frontends; re-architect the Form Builder's rule engine.",
-      'Extend the Next.js marketing website, blog and docs with the team (server rendering, SEO).',
+      'Extend the Next.js marketing website, blog and docs with the team (server rendering, SEO, Core Web Vitals checked with Lighthouse).',
       'Add PHPUnit tests and 300+ frontend test files, raising commits shipped with tests from ~5% to ~56%; deliver 200+ tickets.',
-      'Investigate production issues using request-ID logs and tracing.',
+      'Ship through Jenkins CI/CD pipelines (tests, Docker images, Kubernetes deploys); investigate production issues using request-ID logs and tracing.',
     ],
   },
   {
