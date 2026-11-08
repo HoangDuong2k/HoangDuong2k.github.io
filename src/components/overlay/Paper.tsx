@@ -79,8 +79,8 @@ function ProjectsDoc() {
     <>
       <h2 className="text-3xl font-bold tracking-tight">Case studies</h2>
       <p className="mt-1 text-black/60">
-        Built with Claude Code as a pair programmer — I own scope, architecture, specs and review. Each ships with unit tests,
-        Playwright E2E and CI.
+        Built with Claude Code as a pair programmer — I own scope, architecture, specs and review. Each ships with automated
+        tests and CI.
       </p>
       <div className="mt-6 space-y-5">
         {projects.map((p) => (
@@ -168,7 +168,7 @@ function NoteDoc() {
       <p className="font-mono text-xs opacity-70">note to self</p>
       <p className="mt-3 text-2xl font-bold">Next goal: solution architect.</p>
       <p className="mt-3 text-sm leading-relaxed">
-        I already own features end to end: Laravel APIs, React UIs, tests and release. Next is designing the systems around
+        I already own features end to end: Laravel and Spring Boot APIs, React UIs, tests and release. Next is designing the systems around
         them.
       </p>
     </div>
