@@ -45,6 +45,40 @@ function homePos(aspect: number) {
 const pos = new THREE.Vector3()
 const target = new THREE.Vector3()
 
+/** Keyboard orbit: arrows turn around the desk, +/- (or PageUp/PageDown) zoom. Speeds per second. */
+const KEY_TURN = 1.1
+const KEY_TILT = 0.7
+const KEY_ZOOM = 3
+const KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', '+', '=', '-', '_', 'PageUp', 'PageDown'])
+
+function typingInto(t: EventTarget | null) {
+  const el = t as HTMLElement | null
+  return !!el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))
+}
+
+/** Keys currently held; cleared when the window loses focus so nothing stays "stuck". */
+function useHeldKeys() {
+  const held = useRef(new Set<string>())
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (!KEYS.has(e.key) || e.ctrlKey || e.metaKey || e.altKey || typingInto(e.target) || getState().focus) return
+      e.preventDefault() // no page scroll
+      held.current.add(e.key)
+    }
+    const up = (e: KeyboardEvent) => held.current.delete(e.key)
+    const clear = () => held.current.clear()
+    window.addEventListener('keydown', down)
+    window.addEventListener('keyup', up)
+    window.addEventListener('blur', clear)
+    return () => {
+      window.removeEventListener('keydown', down)
+      window.removeEventListener('keyup', up)
+      window.removeEventListener('blur', clear)
+    }
+  }, [])
+  return held
+}
+
 /**
  * Free orbit (drag) while nothing is focused; a timed fly-to when something is.
  * camera-controls smooths by time (smoothTime), not per frame, so drag inertia feels the same at
@@ -57,6 +91,7 @@ export function CameraRig() {
   const focus = useStore((s) => s.focus)
   const tween = useRef<Tween | null>(null)
   const saved = useRef({ pos: homePos(aspect), target: new THREE.Vector3(...HOME.target) })
+  const held = useHeldKeys()
 
   useEffect(() => {
     const c = controls.current
@@ -126,9 +161,20 @@ export function CameraRig() {
     }
   }
 
-  useFrame(() => {
+  useFrame((_, dt) => {
     const c = controls.current
     const t = tween.current
+    if (c && !t && c.enabled && held.current.size) {
+      if (getState().focus) held.current.clear()
+      const k = held.current
+      const step = Math.min(dt, 0.05)
+      const turn = (k.has('ArrowLeft') ? 1 : 0) - (k.has('ArrowRight') ? 1 : 0)
+      const tilt = (k.has('ArrowDown') ? 1 : 0) - (k.has('ArrowUp') ? 1 : 0)
+      const zoom = (k.has('+') || k.has('=') || k.has('PageUp') ? 1 : 0) - (k.has('-') || k.has('_') || k.has('PageDown') ? 1 : 0)
+      // Same smoothing as dragging (the controls ease towards the new pose); limits still apply.
+      if (turn || tilt) c.rotate(-turn * KEY_TURN * step, tilt * KEY_TILT * step, true)
+      if (zoom) c.dolly(zoom * KEY_ZOOM * step, true)
+    }
     if (!c || !t) return
     const p = Math.min((performance.now() - t.start) / (DURATION * 1000), 1)
     const k = ease(p)

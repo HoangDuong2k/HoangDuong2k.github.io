@@ -343,78 +343,145 @@ export function createNeonTexture(text: string, color: string) {
   return tex
 }
 
-/** Night skyline seen through the window. */
-export function createSkylineTexture() {
-  const W = 512
+/** Night sky behind the city: gradient, stars, moon with a halo, a few soft clouds. */
+export function createNightSkyTexture() {
+  const W = 1024
   const H = 512
   const { canvas, ctx } = makeCanvas(W, H)
   const sky = ctx.createLinearGradient(0, 0, 0, H)
-  sky.addColorStop(0, '#0b1030')
-  sky.addColorStop(0.6, '#3b1d5e')
-  sky.addColorStop(1, '#ff7a90')
+  sky.addColorStop(0, '#070a22')
+  sky.addColorStop(0.45, '#1d1446')
+  sky.addColorStop(0.75, '#5a2668')
+  sky.addColorStop(1, '#c2557a')
   ctx.fillStyle = sky
   ctx.fillRect(0, 0, W, H)
-  ctx.fillStyle = 'rgba(255,255,255,0.8)'
-  for (let i = 0; i < 40; i++) ctx.fillRect((i * 97) % W, (i * 53) % 200, 2, 2)
-  ctx.fillStyle = '#fde68a'
-  ctx.beginPath()
-  ctx.arc(390, 110, 34, 0, Math.PI * 2)
-  ctx.fill()
-  let x = 0
-  let seed = 7
+  let seed = 5
   const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
-  while (x < W) {
-    const w = 40 + rand() * 60
-    const h = 140 + rand() * 230
-    ctx.fillStyle = `rgb(${18 + rand() * 12},${14 + rand() * 10},${40 + rand() * 20})`
-    ctx.fillRect(x, H - h, w - 4, h)
-    for (let wy = H - h + 12; wy < H - 8; wy += 16) {
-      for (let wx = x + 6; wx < x + w - 12; wx += 12) {
-        if (rand() > 0.55) {
-          ctx.fillStyle = rand() > 0.8 ? '#7dd3fc' : '#fcd34d'
-          ctx.fillRect(wx, wy, 5, 7)
-        }
-      }
-    }
-    x += w
+  for (let i = 0; i < 260; i++) {
+    const y = Math.pow(rand(), 1.6) * H * 0.6
+    const a = 0.25 + rand() * 0.7
+    ctx.fillStyle = `rgba(255,255,255,${a * (1 - y / (H * 0.6))})`
+    const r = rand() > 0.93 ? 1.6 : 0.8
+    ctx.beginPath()
+    ctx.arc(rand() * W, y, r, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  // Moon with halo and faint maria.
+  const mx = W * 0.62
+  const my = H * 0.2
+  const halo = ctx.createRadialGradient(mx, my, 10, mx, my, 120)
+  halo.addColorStop(0, 'rgba(255,236,190,0.45)')
+  halo.addColorStop(1, 'rgba(255,236,190,0)')
+  ctx.fillStyle = halo
+  ctx.fillRect(mx - 130, my - 130, 260, 260)
+  ctx.fillStyle = '#fff1c9'
+  ctx.beginPath()
+  ctx.arc(mx, my, 26, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = 'rgba(190,170,130,0.35)'
+  for (const [dx, dy, r] of [
+    [-8, -6, 7],
+    [7, 5, 6],
+    [-3, 10, 4],
+  ])
+    ctx.beginPath(), ctx.arc(mx + dx, my + dy, r, 0, Math.PI * 2), ctx.fill()
+  // Thin clouds catching the city glow.
+  for (let i = 0; i < 9; i++) {
+    const cx = rand() * W
+    const cy = H * (0.35 + rand() * 0.3)
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, 160)
+    g.addColorStop(0, 'rgba(160,90,170,0.18)')
+    g.addColorStop(1, 'rgba(160,90,170,0)')
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.scale(2.6, 0.35)
+    ctx.translate(-cx, -cy)
+    ctx.fillStyle = g
+    ctx.fillRect(cx - 160, cy - 160, 320, 320)
+    ctx.restore()
   }
   return toTexture(canvas)
 }
 
-/** Dark oak floor planks. */
-export function createFloorTexture() {
-  const W = 1024
-  const H = 1024
+/**
+ * One layer of city skyline on a transparent background, for parallax behind the window.
+ * `near` layers are bigger, darker silhouettes with more lit windows, rooftop details and signs.
+ */
+export function createCityLayerTexture(layer: 0 | 1 | 2) {
+  const W = 2048
+  const H = 512
   const { canvas, ctx } = makeCanvas(W, H)
-  const plank = 128
-  let seed = 3
+  let seed = 101 + layer * 37
   const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)
-  for (let y = 0; y < H; y += plank) {
-    let x = -rand() * 400
-    while (x < W) {
-      const len = 300 + rand() * 300
-      const l = 14 + rand() * 6
-      ctx.fillStyle = `hsl(260, 10%, ${l}%)`
-      ctx.fillRect(x, y, len, plank)
-      ctx.strokeStyle = 'rgba(255,255,255,0.03)'
-      for (let g = 0; g < 6; g++) {
-        ctx.beginPath()
-        const gy = y + 10 + rand() * (plank - 20)
-        ctx.moveTo(x, gy)
-        ctx.bezierCurveTo(x + len / 3, gy + 6, x + (2 * len) / 3, gy - 6, x + len, gy)
-        ctx.stroke()
-      }
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'
-      ctx.fillRect(x, y, 2, plank)
-      x += len
+  const base = [
+    [34, 26, 70],
+    [22, 17, 44],
+    [12, 10, 22],
+  ][layer]
+  const minH = [0.25, 0.35, 0.45][layer] * H
+  const maxH = [0.6, 0.8, 0.95][layer] * H
+  const win = [3, 5, 7][layer]
+  let x = -20
+  while (x < W) {
+    const w = (layer === 2 ? 110 : 60) + rand() * (layer === 2 ? 160 : 110)
+    const h = minH + rand() * (maxH - minH)
+    const top = H - h
+    const l = 0.85 + rand() * 0.3
+    ctx.fillStyle = `rgb(${base[0] * l},${base[1] * l},${base[2] * l})`
+    ctx.fillRect(x, top, w - 3, h)
+    // Stepped crowns and rooftop boxes on some towers.
+    if (rand() > 0.55) ctx.fillRect(x + w * 0.2, top - 14, w * 0.5, 14)
+    if (layer > 0 && rand() > 0.6) {
+      ctx.fillRect(x + w * 0.45, top - 40, 3, 40)
+      ctx.fillStyle = 'rgba(255,70,90,0.9)'
+      ctx.beginPath()
+      ctx.arc(x + w * 0.45 + 1.5, top - 42, 2.4, 0, Math.PI * 2)
+      ctx.fill()
     }
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'
-    ctx.fillRect(0, y, W, 2)
+    // Window grid: warm and cool lights, some floors dark.
+    const cols = Math.floor((w - 12) / (win * 2.4))
+    for (let wy = top + 10; wy < H - 6; wy += win * 2.2) {
+      const floorLit = rand() > 0.25
+      for (let c = 0; c < cols; c++) {
+        if (!floorLit || rand() > 0.5) continue
+        const warm = rand() > 0.25
+        const a = 0.45 + rand() * 0.55
+        ctx.fillStyle = warm ? `rgba(255,${190 + rand() * 50},${110 + rand() * 60},${a})` : `rgba(140,${200 + rand() * 40},255,${a})`
+        ctx.fillRect(x + 6 + c * win * 2.4, wy, win * 1.4, win)
+      }
+    }
+    // A neon sign on a near building now and then.
+    if (layer === 2 && rand() > 0.72) {
+      const sx = x + 10 + rand() * (w - 50)
+      const sy = top + 30 + rand() * 80
+      ctx.shadowColor = rand() > 0.5 ? '#ff4d8d' : '#22d3ee'
+      ctx.shadowBlur = 14
+      ctx.fillStyle = ctx.shadowColor
+      ctx.fillRect(sx, sy, 10, 60 + rand() * 40)
+      ctx.shadowBlur = 0
+    }
+    x += w
   }
   const tex = toTexture(canvas)
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
-  tex.repeat.set(3, 3)
+  tex.wrapS = THREE.RepeatWrapping
   return tex
+}
+
+/** Height readout on the standing desk's control panel. */
+export function createDeskReadoutTexture() {
+  const W = 128
+  const H = 40
+  const { canvas, ctx } = makeCanvas(W, H)
+  ctx.fillStyle = '#05060a'
+  ctx.fillRect(0, 0, W, H)
+  ctx.fillStyle = '#5eead4'
+  ctx.shadowColor = '#5eead4'
+  ctx.shadowBlur = 6
+  ctx.font = `600 28px ${MONO}`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText('74.5', W / 2, H / 2 + 1)
+  return toTexture(canvas)
 }
 
 /** Desk mat with a subtle grid and logo. */
@@ -505,6 +572,41 @@ export function createCatTailTexture() {
   ctx.fillStyle = FUR_WHITE
   ctx.fillRect(0, 0, W, H)
   grain(ctx, W, H, 300)
+  return toTexture(canvas)
+}
+
+/** Embroidered patch on the back of the chair: stitched ring and a "</>" monogram. */
+export function createLogoPatchTexture() {
+  const S = 256
+  const { canvas, ctx } = makeCanvas(S, S)
+  ctx.clearRect(0, 0, S, S)
+  ctx.strokeStyle = '#7c5cff'
+  ctx.lineWidth = 10
+  ctx.beginPath()
+  ctx.arc(S / 2, S / 2, S / 2 - 14, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.setLineDash([6, 5])
+  ctx.lineWidth = 2.5
+  ctx.strokeStyle = 'rgba(200,190,255,0.7)'
+  ctx.beginPath()
+  ctx.arc(S / 2, S / 2, S / 2 - 26, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.setLineDash([])
+  ctx.fillStyle = '#9d86ff'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = `800 92px ${MONO}`
+  ctx.fillText('</>', S / 2, S / 2 + 4)
+  // Thread texture: fine diagonal lines over the embroidery.
+  ctx.globalCompositeOperation = 'source-atop'
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+  ctx.lineWidth = 1
+  for (let i = -S; i < S; i += 4) {
+    ctx.beginPath()
+    ctx.moveTo(i, 0)
+    ctx.lineTo(i + S, S)
+    ctx.stroke()
+  }
   return toTexture(canvas)
 }
 

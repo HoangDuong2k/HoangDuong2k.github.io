@@ -80,7 +80,7 @@ function Hud() {
       </header>
       <footer className="absolute inset-x-0 bottom-0 flex justify-center p-5">
         <div className="rounded-full bg-white/10 px-4 py-2 text-xs text-white/60 ring-1 ring-white/10 backdrop-blur">
-          <b className="text-white/90">Drag</b> to look around · <b className="text-white/90">Click</b> the screen or a document
+          <b className="text-white/90">Drag</b> or <b className="text-white/90">← → ↑ ↓</b> to look around · <b className="text-white/90">Click</b> the screen or a document
         </div>
       </footer>
     </div>
