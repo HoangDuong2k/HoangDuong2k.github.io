@@ -168,7 +168,7 @@ function NoteDoc() {
       <p className="font-mono text-xs opacity-70">note to self</p>
       <p className="mt-3 text-2xl font-bold">Next goal: solution architect.</p>
       <p className="mt-3 text-sm leading-relaxed">
-        I already own features end to end: Laravel and Spring Boot APIs, React UIs, tests and release. Next is designing the systems around
+        I already own features end to end: Spring Boot and Laravel APIs, React UIs, tests and release. Next is designing the systems around
         them.
       </p>
     </div>

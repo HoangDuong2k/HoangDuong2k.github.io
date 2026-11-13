@@ -38,9 +38,9 @@ function Neofetch() {
     ['OS', 'hoang.os 2026 (React Three Fiber kernel)'],
     ['Role', `${profile.role} @ Stringee`],
     ['Uptime', `${profile.years} years in production`],
-    ['Shell', 'PHP 8 · Laravel 11 · Java · Spring Boot · TypeScript'],
+    ['Shell', 'Java · Spring Boot · TypeScript · PHP 8 · Laravel'],
     ['UI', 'momi-ui · Tailwind v4 · Radix'],
-    ['Tests', 'PHPUnit · JUnit · 300+ frontend test files'],
+    ['Tests', 'JUnit · Testcontainers · PHPUnit · 300+ frontend test files'],
     ['Pair', 'Claude Code + MCP'],
   ]
   return (
